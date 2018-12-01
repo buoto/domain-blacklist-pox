@@ -44,6 +44,12 @@ from pox.forwarding.l2_learning import LearningSwitch
 log = core.getLogger()
 
 
+def block_ip(connection, ip):
+    msg = of.ofp_flow_mod()
+    msg.match = of.ofp_match(dl_type = 0x0800, nw_dst=ip)
+    connection.send(msg)
+
+
 class BlacklistingLearningSwitch(LearningSwitch):
 
     def _handle_PacketIn(self, event):
@@ -53,8 +59,11 @@ class BlacklistingLearningSwitch(LearningSwitch):
 @poxutil.eval_args
 def launch ():
 
-    def _handle_ConnectionUp (event):
-        log.info("Connection %s" % (event.connection,))
-        BlacklistingLearningSwitch(event.connection, False)
+    def _handle_ConnectionUp(event):
+        connection = event.connection
+        log.info("Connection %s" % (connection,))
+        # example usage
+        # block_ip(connection, "8.8.8.8")
+        BlacklistingLearningSwitch(connection, False)
 
     core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
