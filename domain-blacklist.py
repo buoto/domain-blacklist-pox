@@ -38,72 +38,23 @@ from pox.lib.addresses import EthAddr, IPAddr # Address types
 import pox.lib.util as poxutil                # Various util functions
 import pox.lib.revent as revent               # Event library
 import pox.lib.recoco as recoco               # Multitasking library
+from pox.forwarding.l2_learning import LearningSwitch
 
 # Create a logger for this component
 log = core.getLogger()
 
 
-def _go_up (event):
-  # Event handler called when POX goes into up state
-  # (we actually listen to the event in launch() below)
-  log.info("Skeleton application ready (to do nothing).")
+class BlacklistingLearningSwitch(LearningSwitch):
 
+    def _handle_PacketIn(self, event):
+        log.info(event.parsed)
+        super(BlacklistingLearningSwitch, self)._handle_PacketIn(event)
 
 @poxutil.eval_args
-def launch (foo, bar = False):
-  """
-  The default launcher just logs its arguments
-  """
-  # When your component is specified on the commandline, POX automatically
-  # calls this function.
+def launch ():
 
-  # Add whatever parameters you want to this.  They will become
-  # commandline arguments.  You can specify default values or not.
-  # In this example, foo is required and bar is not.  You may also
-  # specify a keyword arguments catch-all (e.g., **kwargs).
+    def _handle_ConnectionUp (event):
+        log.info("Connection %s" % (event.connection,))
+        BlacklistingLearningSwitch(event.connection, False)
 
-  # For example, you can execute this component as:
-  # ./pox.py skeleton --foo=3 --bar=4
-
-  # Note that arguments passed from the commandline are ordinarily
-  # always strings, and it's up to you to validate and convert them.
-  # The one exception is if a user specifies the parameter name but no
-  # value (e.g., just "--foo").  In this case, it receives the actual
-  # Python value True.
-  # The @pox.util.eval_args decorator interprets them as if they are
-  # Python literals.  Even things like --foo=[1,2,3] behave as expected.
-  # Things that don't appear to be Python literals are left as strings.
-
-  # If you want to be able to invoke the component multiple times, add
-  # __INSTANCE__=None as the last parameter.  When multiply-invoked, it
-  # will be passed a tuple with the following:
-  # 1. The number of this instance (0...n-1)
-  # 2. The total number of instances for this module
-  # 3. True if this is the last instance, False otherwise
-  # The last is just a comparison between #1 and #2, but is convenient.
-
-  log.warn("Foo: %s (%s)", foo, type(foo))
-  log.warn("Bar: %s (%s)", bar, type(bar))
-
-  core.addListenerByName("UpEvent", _go_up)
-
-
-def breakfast ():
-  """
-  Serves a Pythonic breakfast
-  """
-  # You can invoke other functions from the commandline too.  We call
-  # these multiple or alternative launch functions.  To execute this
-  # one, you'd do:
-  # ./pox.py skeleton:breakfast
-
-  import random
-  items = "egg,bacon,sausage,baked beans,tomato".split(',')
-  random.shuffle(items)
-  breakfast = items[:random.randint(0,len(items))]
-  breakfast += ['spam'] * random.randint(0,len(breakfast)+1)
-  random.shuffle(breakfast)
-  if len(breakfast) == 0: breakfast = ["lobster thermidor aux crevettes"]
-
-  log.warn("Breakfast is served:")
-  log.warn("%s and spam", ", ".join(breakfast))
+    core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
