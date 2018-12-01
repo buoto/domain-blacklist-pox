@@ -1,0 +1,1 @@
+After adding new file execute: PROJECT_ROOT/pox/ext$ cp --symbolic-link ../../domain-blacklist/* .
