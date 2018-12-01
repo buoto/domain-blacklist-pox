@@ -47,7 +47,7 @@ log = core.getLogger()
 class BlacklistingLearningSwitch(LearningSwitch):
 
     def _handle_PacketIn(self, event):
-        log.info(event)
+        log.info(event.parsed)
         super(BlacklistingLearningSwitch, self)._handle_PacketIn(event)
 
 @poxutil.eval_args
