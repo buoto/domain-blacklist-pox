@@ -7,9 +7,37 @@ domain-blacklist-pox
 
 2. Move this repo ([domain-blacklist-pox](https://github.com/buoto/domain-blacklist-pox)) to `ext/` dir in pox repo.
 
-3. Run pox with extension:
+3. Setup PostgreSQL database
+    Create user and database:
     ```
-    ./pox domain-blacklist
+    $ sudo su
+    $ su - postgres
+    $ psql
+    postgres=# CREATE USER domain_blacklist WITH PASSWORD 'domain_blacklist';
+    CREATE ROLE
+    postgres=# CREATE DATABASE domain_blacklist;
+    CREATE DATABASE
+    postgres=# GRANT ALL PRIVILEGES ON DATABASE domain_blacklist TO domain_blacklist;
+    GRANT
+    ```
+    Execute ddl script:
+    ```
+    $ psql -U domain_blacklist -h localhost
+    Password for user domain_blacklist: 
+    psql (9.5.14)
+    SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+    Type "help" for help.
+
+    domain_blacklist=> \i schema.ddl 
+    CREATE TABLE
+    CREATE TABLE
+    ALTER TABLE
+    domain_blacklist=> 
+    ```
+
+4. Run pox with extension:
+    ```
+    ./pox.py domain-blacklist log.level --DEBUG
     ```
 
 # Demo

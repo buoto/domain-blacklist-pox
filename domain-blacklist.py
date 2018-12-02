@@ -69,6 +69,8 @@ class BlacklistingLearningSwitch(LearningSwitch):
             log.info('answers: %s', dns_packet.answers)
             log.info('qr: %s', dns_packet.qr)
 
+        postgresWrapper.is_on_blacklist('wikipedia.com') # TODO 
+
         super(BlacklistingLearningSwitch, self)._handle_PacketIn(event)
 
 @poxutil.eval_args
@@ -83,3 +85,35 @@ def launch ():
         BlacklistingLearningSwitch(connection, False)
 
     core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
+
+
+
+class PostgresConnectionWrapper:
+    def __init__(self):
+        self.db_credentials = {
+            'dbname': 'domain_blacklist',
+            'user': 'domain_blacklist',
+            'password': 'domain_blacklist',
+            'host': 'localhost',
+            'port': 5432
+        }
+    
+    def is_on_blacklist(self, domainName):
+        import psycopg2
+        try:
+            with psycopg2.connect(**self.db_credentials) as conn, conn.cursor() as cur:
+                cur.execute('SELECT count(*) from banned_domain where domain = (%s)' ,[domainName])
+                rows = cur.fetchall()
+                is_blacklisted = rows[0][0] > 0
+                if is_blacklisted:
+                    log.debug('Domain ' + domainName + ' on blacklist')
+                else:
+                    log.debug('Domain ' + domainName + ' is accessible')
+                return is_blacklisted
+        except psycopg2.ProgrammingError as e:
+            log.info('Exception occured')
+            log.error(e)
+            conn.tpc_rollback()
+        return False
+
+postgresWrapper = PostgresConnectionWrapper()
