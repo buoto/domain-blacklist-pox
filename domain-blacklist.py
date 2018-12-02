@@ -43,17 +43,32 @@ from pox.forwarding.l2_learning import LearningSwitch
 # Create a logger for this component
 log = core.getLogger()
 
-
 def block_ip(connection, ip):
     msg = of.ofp_flow_mod()
     msg.match = of.ofp_match(dl_type = 0x0800, nw_dst=ip)
     connection.send(msg)
+
+def event_on_dnslookup(connection):
+    # http://www.cavebear.com/archive/cavebear/Ethernet/type.html
+    connection.send( of.ofp_flow_mod( action=of.ofp_action_output( port = of.OFPP_CONTROLLER ),
+                                       priority=1,
+                                       match=of.ofp_match( dl_type=0x803C,
+                                                           nw_dst=None)))
+    # validate flow installed:
+    # root@mininet-vm:/home/mininet# ovs-ofctl dump-flows s1
 
 
 class BlacklistingLearningSwitch(LearningSwitch):
 
     def _handle_PacketIn(self, event):
         log.info(event.parsed)
+
+        if isinstance(event.parsed, pkt.dns):
+            log.info('DNS lookup occured')
+            log.info('questions: %s', dns_packet.questions)
+            log.info('answers: %s', dns_packet.answers)
+            log.info('qr: %s', dns_packet.qr)
+
         super(BlacklistingLearningSwitch, self)._handle_PacketIn(event)
 
 @poxutil.eval_args
@@ -64,6 +79,7 @@ def launch ():
         log.info("Connection %s" % (connection,))
         # example usage
         # block_ip(connection, "8.8.8.8")
+        event_on_dnslookup(connection)
         BlacklistingLearningSwitch(connection, False)
 
     core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
