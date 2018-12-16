@@ -1,16 +1,21 @@
 # Import some POX stuff
-from pox.core import core                     # Main POX object
-import pox.openflow.libopenflow_01 as of      # OpenFlow 1.0 library
-import pox.lib.packet as pkt                  # Packet parsing/construction
-from pox.lib.addresses import EthAddr, IPAddr # Address types
-import pox.lib.util as poxutil                # Various util functions
-import pox.lib.revent as revent               # Event library
-import pox.lib.recoco as recoco               # Multitasking library
+import pox.lib.packet as pkt  # Packet parsing/construction
+import pox.lib.recoco as recoco  # Multitasking library
+import pox.lib.revent as revent  # Event library
+import pox.lib.util as poxutil  # Various util functions
+import pox.openflow.libopenflow_01 as of  # OpenFlow 1.0 library
+from blacklist import Blacklist
+from handler import BlacklistHandler
+from models import Base
+from pox.core import core  # Main POX object
 from pox.forwarding.l2_learning import LearningSwitch
+from pox.lib.addresses import EthAddr, IPAddr  # Address types
+from pox.web import webcore
 
 # Create a logger for this component
 log = core.getLogger()
 
+blacklist = Blacklist()
 
 def dns_response_match():
     match = of.ofp_match()
@@ -31,7 +36,7 @@ class BlacklistingLearningSwitch(LearningSwitch):
         if dns_packet:
             for answer in dns_packet.answers:
                 domain = answer.name
-                is_banned = postgresWrapper.is_on_blacklist(domain)
+                is_banned = blacklist.contains(domain)
                 is_a = answer.qtype == answer.A_TYPE
                 if is_banned and is_a:
                     ip = answer.rddata
@@ -57,40 +62,10 @@ class BlacklistingLearningSwitch(LearningSwitch):
 
 @poxutil.eval_args
 def launch ():
-
+    core.WebServer.set_handler("/blacklist", BlacklistHandler, {'blacklist': blacklist})
     def _handle_ConnectionUp(event):
         connection = event.connection
         log.info("Connection %s" % (connection,))
-        # example usage
-        # block_ip(connection, "8.8.8.8")
         BlacklistingLearningSwitch(connection, False)
 
     core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
-
-
-
-class PostgresConnectionWrapper:
-    def __init__(self):
-        self.db_credentials = {
-            'dbname': 'domain_blacklist',
-        }
-    
-    def is_on_blacklist(self, domainName):
-        import psycopg2
-        try:
-            with psycopg2.connect(**self.db_credentials) as conn, conn.cursor() as cur:
-                cur.execute('SELECT count(*) from banned_domain where domain = (%s)' ,[domainName])
-                rows = cur.fetchall()
-                is_blacklisted = rows[0][0] > 0
-                if is_blacklisted:
-                    log.debug('Domain ' + domainName + ' on blacklist')
-                else:
-                    log.debug('Domain ' + domainName + ' is accessible')
-                return is_blacklisted
-        except psycopg2.ProgrammingError as e:
-            log.info('Exception occured')
-            log.error(e)
-            conn.tpc_rollback()
-        return False
-
-postgresWrapper = PostgresConnectionWrapper()
