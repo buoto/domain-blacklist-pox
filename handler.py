@@ -11,7 +11,6 @@ class BlacklistHandler(webcore.SplitRequestHandler, object):
         if 'blacklist' in args:
             self.blacklist = args['blacklist']
 
-
     def do_POST(self):
         data = {}
         try:
@@ -19,12 +18,32 @@ class BlacklistHandler(webcore.SplitRequestHandler, object):
         except ValueError:
             self.respond(400, {'error': 'invalid json'})
         self.log_message(str(data))
-        if 'domain' not in data:
-            self.respond(400, {'error': 'missing "domain" field'})
+        if 'domains' not in data:
+            self.respond(400, {'error': 'missing "domains" field'})
 
-        domain = data['domain']
-        self.blacklist.add(domain)
-        self.respond(201, {'domain': domain})
+        existing_domains = [d.name for d in self.blacklist.domains()]
+        domains = [d for d in data['domains'] if d not in existing_domains]
+        for d in domains:
+            self.log_message("Adding to blacklist: " + d)
+            self.blacklist.add(d)
+        self.respond(201, {'added': domains})
+
+    def do_DELETE(self):
+        try:
+            data = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))))
+        except ValueError:
+            self.respond(400, {'error': 'invalid json'})
+        self.log_message(str(data))
+        if 'domains' not in data:
+            self.respond(400, {'error': 'missing "domains" field'})
+
+        existing_domains = [d.name for d in self.blacklist.domains()]
+        domains = [d for d in data['domains'] if d in existing_domains]
+        for d in domains:
+            self.log_message("Removing from blacklist: " + d)
+            self.blacklist.remove(d)
+
+        self.respond(200, {'removed': domains})
 
     def do_GET(self):
         self.respond(200, {'blacklist': [str(d) for d in self.blacklist.domains()]})

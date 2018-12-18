@@ -13,31 +13,28 @@ domain-blacklist-pox
     $ sudo su
     $ su - postgres
     $ psql
-    postgres=# CREATE USER domain_blacklist WITH PASSWORD 'domain_blacklist';
+    postgres=# CREATE USER <shell username>;
     CREATE ROLE
     postgres=# CREATE DATABASE domain_blacklist;
-    CREATE DATABASE
-    postgres=# GRANT ALL PRIVILEGES ON DATABASE domain_blacklist TO domain_blacklist;
+    postgres=# \c domain_blacklist
+    You are now connected to database "domain_blacklist" as user "postgres".
+    postgres=# GRANT ALL PRIVILEGES on all tables in schema public to <shell username>;
     GRANT
     ```
-    Execute ddl script:
+    Initiate database:
     ```
-    $ psql -U domain_blacklist -h localhost
-    Password for user domain_blacklist: 
-    psql (9.5.14)
-    SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
-    Type "help" for help.
-
-    domain_blacklist=> \i schema.ddl 
-    CREATE TABLE
-    CREATE TABLE
-    ALTER TABLE
-    domain_blacklist=> 
+    $ python init_db.py
     ```
 
 4. Run pox with extension:
     ```
-    ./pox.py domain-blacklist log.level --DEBUG
+    $ make install
+    $ make run
+    ```
+    In another terminal you can manage blacklisted domains:
+    ```
+    $ python cli.py list
+    No blacklisted domains.
     ```
 
 # Demo
