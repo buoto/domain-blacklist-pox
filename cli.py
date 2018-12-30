@@ -7,10 +7,12 @@ import json
 server_addr = 'localhost:8000'
 conn_refused_error_msg = "Error: Server currently not available. Make sure you started POX controller."
 
+PATH = '/blacklist'
+
 def handle_add_domains(domains):
     try:
         conn = httplib.HTTPConnection(server_addr)
-        conn.request("POST", "/blacklist", json.dumps({'domains': domains}))
+        conn.request("POST", PATH, json.dumps({'domains': domains}))
         resp = conn.getresponse()
         raw_resp = resp.read()
         print raw_resp
@@ -24,10 +26,11 @@ def handle_add_domains(domains):
 def handle_remove_domains(domains_to_remove):
     try:
         conn = httplib.HTTPConnection(server_addr)
-        conn.request("DELETE", "/blacklist", json.dumps({'domains': domains_to_remove}))
-        resp = conn.getresponse()
-        raw_resp = resp.read()
-        print raw_resp
+        for domain in domains_to_remove:
+            conn.request("DELETE", "{}/{}".format(PATH, domain))
+            resp = conn.getresponse()
+            raw_resp = resp.read()
+            print raw_resp
     except socket_error as serr:
         if serr.errno == errno.ECONNREFUSED:
             print conn_refused_error_msg
@@ -38,7 +41,7 @@ def handle_remove_domains(domains_to_remove):
 def handle_list_domains():
     try:
         conn = httplib.HTTPConnection(server_addr)
-        conn.request("GET", "/blacklist")
+        conn.request("GET", PATH)
         resp = conn.getresponse()
         data = json.loads(resp.read())
         domains = data['blacklist']
@@ -52,7 +55,7 @@ def handle_list_domains():
         if serr.errno == errno.ECONNREFUSED:
             print conn_refused_error_msg
             exit()
-        raise # tego błędu nie potrafimy obsłużyć
+        raise
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Cli helps managing blacklisted domains in the network.')

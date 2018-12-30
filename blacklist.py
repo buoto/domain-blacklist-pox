@@ -27,6 +27,8 @@ class Blacklist(object):
         try:
             d = s.query(BlockedDomain)\
                 .filter(BlockedDomain.name == domain).first()
+            if d is None:
+                return
             s.delete(d)
             s.commit()
         except:
