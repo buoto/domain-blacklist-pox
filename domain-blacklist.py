@@ -41,14 +41,10 @@ class BlacklistingLearningSwitch(LearningSwitch):
                 if is_banned and is_a:
                     ip = answer.rddata
                     log.info("Blocking ip {} of blacklisted domain {}".format(ip, domain))
-                    self.block_ip(ip)
+                    blacklist.block(domain, ip)
 
         super(BlacklistingLearningSwitch, self)._handle_PacketIn(event)
 
-    def block_ip(self, ip):
-        msg = of.ofp_flow_mod()
-        msg.match = of.ofp_match(dl_type = pkt.ethernet.IP_TYPE, nw_dst=ip)
-        self.connection.send(msg)
 
     def notify_on_dnslookup(self):
         log.info("Installing dns response capturing flow")
@@ -65,7 +61,13 @@ def launch ():
     core.WebServer.set_handler("/blacklist", BlacklistHandler, {'blacklist': blacklist})
     def _handle_ConnectionUp(event):
         connection = event.connection
+        blacklist.connection_up(connection)
         log.info("Connection %s" % (connection,))
         BlacklistingLearningSwitch(connection, False)
 
+    def _handle_ConnectionDown(event):
+        connection = event.connection
+        blacklist.connection_down(connection)
+
     core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
+    core.openflow.addListenerByName("ConnectionDown", _handle_ConnectionDown)

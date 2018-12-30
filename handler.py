@@ -18,7 +18,6 @@ class BlacklistHandler(webcore.SplitRequestHandler, object):
         except ValueError:
             self.respond(400, {'error': 'invalid json'})
             return
-        self.log_message(str(data))
         if 'domains' not in data:
             self.respond(400, {'error': 'missing "domains" field'})
             return
