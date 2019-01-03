@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-from models import Base
 from sqlalchemy import create_engine
 
-engine = create_engine('postgres:///domain_blacklist')
-Base.metadata.drop_all(engine)
-Base.metadata.create_all(engine)
+from models import BASE
+
+ENGINE = create_engine('postgres:///domain_blacklist')
+BASE.metadata.drop_all(ENGINE)
+BASE.metadata.create_all(ENGINE)

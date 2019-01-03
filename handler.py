@@ -1,6 +1,5 @@
 import json
 
-from models import BlockedDomain
 from pox.web import webcore
 
 
@@ -24,14 +23,14 @@ class BlacklistHandler(webcore.SplitRequestHandler, object):
 
         existing_domains = [d.name for d in self.blacklist.domains()]
         domains = [d for d in data['domains'] if d not in existing_domains]
-        for d in domains:
-            self.log_message("Adding to blacklist: " + d)
-            self.blacklist.add(d)
+        for domain in domains:
+            self.log_message("Adding to blacklist: " + domain)
+            self.blacklist.add(domain)
         self.respond(201, {'added': domains})
 
     def do_DELETE(self):
         domain = self.path.lstrip('/')
-        if len(domain) == 0:
+        if not domain:
             self.respond(400, {'error': 'invalid domain name'})
             return
 

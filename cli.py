@@ -1,31 +1,32 @@
 import argparse
-import httplib
 import errno
-from socket import error as socket_error
+import httplib
 import json
+from socket import error as socket_error
 
-server_addr = 'localhost:8000'
-conn_refused_error_msg = "Error: Server currently not available. Make sure you started POX controller."
+SERVER_ADDR = 'localhost:8000'
+CONN_REFUSED_ERROR_MESSAGE = "Error: Server currently not available.\
+ Make sure you started POX controller."
 
 PATH = '/blacklist'
 
 def handle_add_domains(domains):
     try:
-        conn = httplib.HTTPConnection(server_addr)
+        conn = httplib.HTTPConnection(SERVER_ADDR)
         conn.request("POST", PATH, json.dumps({'domains': domains}))
         resp = conn.getresponse()
         raw_resp = resp.read()
         print raw_resp
     except socket_error as serr:
         if serr.errno == errno.ECONNREFUSED:
-            print conn_refused_error_msg
+            print CONN_REFUSED_ERROR_MESSAGE
             exit()
         raise
 
 
 def handle_remove_domains(domains_to_remove):
     try:
-        conn = httplib.HTTPConnection(server_addr)
+        conn = httplib.HTTPConnection(SERVER_ADDR)
         for domain in domains_to_remove:
             conn.request("DELETE", "{}/{}".format(PATH, domain))
             resp = conn.getresponse()
@@ -33,32 +34,34 @@ def handle_remove_domains(domains_to_remove):
             print raw_resp
     except socket_error as serr:
         if serr.errno == errno.ECONNREFUSED:
-            print conn_refused_error_msg
+            print CONN_REFUSED_ERROR_MESSAGE
             exit()
         raise
 
 
 def handle_list_domains():
     try:
-        conn = httplib.HTTPConnection(server_addr)
+        conn = httplib.HTTPConnection(SERVER_ADDR)
         conn.request("GET", PATH)
         resp = conn.getresponse()
         data = json.loads(resp.read())
         domains = data['blacklist']
-        if len(domains) == 0:
+        if not domains:
             print "No blacklisted domains."
         else:
             print "Blacklisted domains:"
-            for i, d in enumerate(domains):
-                print str(i + 1) + ": " + d
+            for i, domain in enumerate(domains):
+                print str(i + 1) + ": " + domain
     except socket_error as serr:
         if serr.errno == errno.ECONNREFUSED:
-            print conn_refused_error_msg
+            print CONN_REFUSED_ERROR_MESSAGE
             exit()
         raise
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='Cli helps managing blacklisted domains in the network.')
+    parser = argparse.ArgumentParser(
+        description='Cli helps managing blacklisted domains in the network.',
+    )
 
     parser.add_argument('action', metavar='action', type=lambda x: x, nargs=1,
                         help="'add' | 'remove' | 'list'")
@@ -72,7 +75,7 @@ def main():
     args = parser.parse_args()
 
     if args.action[0] == 'add' or args.action[0] == 'remove':
-        if len(args.domain) == 0:
+        if not args.domain:
             parser.print_help()
             print "\nError: domain name(s) not specified"
             exit()
@@ -85,12 +88,8 @@ def main():
         handle_list_domains()
     else:
         parser.print_help()
-        print("\nError: cannot understand action: " + args.action[0])
+        print "\nError: cannot understand action: " + args.action[0]
         exit()
 
 if __name__ == "__main__":
     main()
-
-
-
-

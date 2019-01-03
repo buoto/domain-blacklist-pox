@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+BASE = declarative_base()
 
-class BlockedDomain(Base):
+class BlockedDomain(BASE):
     __tablename__ = 'blocked_domain'
     name = Column(String, primary_key=True)
     ips = relationship("BlockedIP", cascade="save-update, merge, delete")
@@ -13,7 +13,7 @@ class BlockedDomain(Base):
         return self.name
 
 
-class BlockedIP(Base):
+class BlockedIP(BASE):
     __tablename__ = 'blocked_ip'
     ip = Column(String, primary_key=True)
     domain = Column(String, ForeignKey('blocked_domain.name'))
