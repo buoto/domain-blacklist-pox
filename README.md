@@ -3,11 +3,7 @@ domain-blacklist-pox
 
 # Setup
 
-1. Clone pox repo [github.com/noxrepo/pox](https://github.com/noxrepo/pox).
-
-2. Move this repo ([domain-blacklist-pox](https://github.com/buoto/domain-blacklist-pox)) to `ext/` dir in pox repo.
-
-3. Setup PostgreSQL database
+1. Setup PostgreSQL database
     Create user and database:
     ```
     $ sudo su
@@ -26,7 +22,7 @@ domain-blacklist-pox
     $ python init_db.py
     ```
 
-4. Run pox with extension:
+2. Run pox with extension:
     ```
     $ make install
     $ make run
@@ -46,6 +42,15 @@ That will expose your host's network interface in VM, which will be usefull in f
 Now you can run mininet host in background with:
 ```
 VBoxManage startvm Mininet-VM --type headless
+```
+
+To access mininet host terminal execute on VirtualBox embedded terminal:
+```
+ifconfig | grep -A 1 eth0
+```
+Than on your host OS run:
+```
+$ ssh mininet@<mininet host IP address> # password is: mininet
 ```
 
 On mininet host run (<host-ip> is your ):
