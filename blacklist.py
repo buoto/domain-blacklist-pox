@@ -21,22 +21,27 @@ class Blacklist(object):
         self.sessionmaker = sessionmaker(bind=self.engine)
 
     def contains(self, domain):
-        session = self.sessionmaker()
-        return session.query(BlockedDomain)\
-            .filter(BlockedDomain.name == domain).count() > 0
+        try:
+            session = self.sessionmaker()
+            return session.query(BlockedDomain)\
+                .filter(BlockedDomain.name == domain).count() > 0
+        finally:
+            session.close()
 
     def add(self, domain):
-        session = self.sessionmaker()
         try:
+            session = self.sessionmaker()
             session.add(BlockedDomain(name=domain))
             session.commit()
         except:
             session.rollback()
             raise
+        finally:
+            session.close()
 
     def remove(self, domain):
-        session = self.sessionmaker()
         try:
+            session = self.sessionmaker()
             domain = session.query(BlockedDomain)\
                 .filter(BlockedDomain.name == domain).first()
             if domain is None:
@@ -48,19 +53,23 @@ class Blacklist(object):
         except:
             session.rollback()
             raise
+        finally:
+            session.close()
 
 
     def add_ip(self, domain, ip):
-        session = self.sessionmaker()
-        exists = session.query(BlockedDomain).filter(BlockedIP.ip == str(ip)).count() > 0
-        if exists:
-            return
         try:
+            session = self.sessionmaker()
+            exists = session.query(BlockedDomain).filter(BlockedIP.ip == str(ip)).count() > 0
+            if exists:
+                return
             session.add(BlockedIP(domain=domain, ip=str(ip)))
             session.commit()
         except:
             session.rollback()
             raise
+        finally:
+            session.close()
 
     def block(self, domain, ip):
         self.add_ip(domain, ip)
@@ -80,8 +89,11 @@ class Blacklist(object):
             conn.send(msg)
 
     def domains(self):
-        session = self.sessionmaker()
-        return session.query(BlockedDomain).all()
+        try:
+            session = self.sessionmaker()
+            return session.query(BlockedDomain).all()
+        finally:
+            session.close()
 
     def connection_up(self, conn):
         self.conns.add(conn)
